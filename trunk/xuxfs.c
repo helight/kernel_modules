@@ -4,52 +4,72 @@
 #include <linux/kobject.h>
 #include <linux/magic.h>
 
+
+
+
+#define XUXFS_MAGIC 0x3966477
+#define XUXFS_DIR   0x0001
+#define PAGE_CACHE_SHIFT        12
+#define PAGE_CACHE_SIZE         256
+#define PAGE_CACHE_MASK         PAGE_MASK
+#define PAGE_MASK       (~(PAGE_SIZE-1))
+
+
+struct xuxfs_dirent {
+        atomic_t                s_count;
+        atomic_t                s_active;
+        struct xuxfs_dirent     *s_parent;
+        struct xuxfs_dirent     *s_sibling;
+        const char              *s_name;
+
+     /*   union {
+                struct xuxfs_elem_dir           s_dir;
+                struct xuxfs_elem_symlink       s_symlink;
+                struct xuxfs_elem_attr          s_attr;
+                struct xuxfs_elem_bin_attr      s_bin_attr;
+        };*/
+
+        unsigned int            s_flags;
+        ino_t                   s_ino;
+        umode_t                 s_mode;
+        struct iattr            *s_iattr;
+};
+
+
 static struct vfsmount *xuxfs_mount;
+struct super_block * xuxfs_sb = NULL;
+
 static int xuxfs_mount_count;
 static bool xuxfs_registered;
-/*
-static struct inode *debugfs_get_inode(struct super_block *sb, int mode, dev_t dev)
-{
-	struct inode *inode = new_inode(sb);
 
-	if (inode) {
-		inode->i_mode = mode;
-		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
-		switch (mode & S_IFMT) {
-		default:
-			init_special_inode(inode, mode, dev);
-			break;
-		case S_IFREG:
-			inode->i_fop = &debugfs_file_operations;
-			break;
-		case S_IFLNK:
-			inode->i_op = &debugfs_link_operations;
-			break;
-		case S_IFDIR:
-			inode->i_op = &simple_dir_inode_operations;
-			inode->i_fop = &simple_dir_operations;
-*/
-			/* directory inodes start off with i_nlink == 2
-			 * (for "." entry) */
-/*			inc_nlink(inode);
-			break;
-		}
-	}
-	return inode; 
-}
-*/
-static int xux_fill_super(struct super_block *sb, void *data, int silent)
-{
-	static struct tree_descr xux_files[] = {{""}};
+static const struct super_operations sysfs_ops = {
+        .statfs         = simple_statfs,
+        .drop_inode     = generic_delete_inode,
+};
 
-	return simple_fill_super(sb, DEBUGFS_MAGIC, xux_files);
+struct xuxfs_dirent xuxfs_root = {
+        .s_name         = "",
+        .s_count        = ATOMIC_INIT(1),
+        .s_flags        = XUXFS_DIR,
+        .s_mode         = S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO,
+        .s_ino          = 1,
+};
+
+static int xuxfs_fill_super(struct super_block *sb, void *data, int silent)
+{
+        static struct tree_descr xuxfs_files[] = {{""}};
+
+        return simple_fill_super(sb, XUXFS_MAGIC, xuxfs_files);
 }
+
+
+
 
 static int xux_get_sb(struct file_system_type *fs_type,
 			int flags, const char *dev_name,
 			void *data, struct vfsmount *mnt)
 {
-	return get_sb_single(fs_type, flags, data, xux_fill_super, mnt);
+	return get_sb_single(fs_type, flags, data, xuxfs_fill_super, mnt);
 }
 
 static struct file_system_type xux_fs_type = {
