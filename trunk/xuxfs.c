@@ -7,7 +7,7 @@
 #include <linux/kobject.h>
 #include <linux/magic.h>
 #include <linux/mount.h>
-#include "xuxfs.h"
+//#include "xuxfs.h"
 
 
 
@@ -15,6 +15,8 @@
 #define XUXFS_DIR   0x0001
 #define PAGE_CACHE_MASK         PAGE_MASK
 #define PAGE_MASK       (~(PAGE_SIZE-1))
+
+extern const struct file_operations xuxfs_file_operations;
 
 static struct vfsmount *xuxfs_mount;
 static int xuxfs_mount_count;
@@ -35,21 +37,9 @@ static struct inode *xuxfs_get_inode(struct super_block *sb, int mode, dev_t dev
                 inode->i_gid = 0;
                 inode->i_blocks = 0;
                 inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
-                switch (mode & S_IFMT) {
-                default:
-                        init_special_inode(inode, mode, dev);
-                        break;
-                case S_IFREG:
                         inode->i_fop = &xuxfs_file_operations;
-                        break;
-                case S_IFDIR:
-                        inode->i_op = &simple_dir_inode_operations;
-                        inode->i_fop = &simple_dir_operations;
-
-                      inc_nlink(inode);
-                        break;
                 }
-        }
+        
         return inode;
 }
 
@@ -58,13 +48,6 @@ static const struct super_operations sysfs_ops = {
         .drop_inode     = generic_delete_inode,
 };
 
-struct xuxfs_dirent xuxfs_root = {
-        .s_name         = "",
-        .s_count        = ATOMIC_INIT(1),
-        .s_flags        = XUXFS_DIR,
-        .s_mode         = S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO,
-        .s_ino          = 1,
-};
 
 static int xuxfs_mknod(struct inode *dir, struct dentry *dentry,
                          int mode, dev_t dev)
@@ -84,24 +67,6 @@ static int xuxfs_mknod(struct inode *dir, struct dentry *dentry,
         return error;
 }
 
-static int xuxfs_mkdir(struct inode *dir, struct dentry *dentry, int mode)
-{
-        int res;
-
-        mode = (mode & (S_IRWXUGO | S_ISVTX)) | S_IFDIR;
-        res = xuxfs_mknod(dir, dentry, mode, 0);
-        if (!res) {
-                inc_nlink(dir);
-                fsnotify_mkdir(dir, dentry);
-        }
-        return res;
-}
-
-static int xuxfs_link(struct inode *dir, struct dentry *dentry, int mode)
-{
-        mode = (mode & S_IALLUGO) | S_IFLNK;
-        return xuxfs_mknod(dir, dentry, mode, 0);
-}
 static int xuxfs_create(struct inode *dir, struct dentry *dentry, int mode)
 {
         int res;
@@ -160,24 +125,9 @@ static int xuxfs_create_by_name(const char *name, mode_t mode,
         }
 
         *dentry = NULL;
-        mutex_lock(&parent->d_inode->i_mutex);
         *dentry = lookup_one_len(name, parent, strlen(name));
-        if (!IS_ERR(*dentry)) {
-                switch (mode & S_IFMT) {
-                case S_IFDIR:
-                        error = xuxfs_mkdir(parent->d_inode, *dentry, mode);
-                        break;
-                case S_IFLNK:
-                        error = xuxfs_link(parent->d_inode, *dentry, mode);
-                        break;
-                default:
 			 error = xuxfs_create(parent->d_inode, *dentry, mode);
-                        break;
-                }
                 dput(*dentry);
-        } else
-                error = PTR_ERR(*dentry);
-        mutex_unlock(&parent->d_inode->i_mutex);
 
         return error;
 }
@@ -216,7 +166,6 @@ struct dentry *xuxfs_create_file(const char *name, mode_t mode,
         struct dentry *dentry = NULL;
         int error;
 
-        //pr_xux("xuxfs: creating file '%s'\n",name);
 
         error = simple_pin_fs(&xux_fs_type, &xuxfs_mount,
                               &xuxfs_mount_count);
