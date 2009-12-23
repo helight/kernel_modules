@@ -16,15 +16,45 @@
 #define PAGE_CACHE_MASK         PAGE_MASK
 #define PAGE_MASK       (~(PAGE_SIZE-1))
 
-extern const struct file_operations xuxfs_file_operations;
 
 static struct vfsmount *xuxfs_mount;
 static int xuxfs_mount_count;
 
-
 struct super_block * xuxfs_sb = NULL;
 
 static bool xuxfs_registered;
+
+static const struct super_operations sysfs_ops = {
+        .statfs         = simple_statfs,
+        .drop_inode     = generic_delete_inode,
+};
+
+static ssize_t default_read_file(struct file *file, char __user *buf,
+                                 size_t count, loff_t *ppos)
+{
+        return 0;
+}
+
+static ssize_t default_write_file(struct file *file, const char __user *buf,
+                                   size_t count, loff_t *ppos)
+{
+        return count;
+}
+
+static int default_open(struct inode *inode, struct file *file)
+{
+        if (inode->i_private)
+                file->private_data = inode->i_private;
+
+        return 0;
+}
+
+const struct file_operations xuxfs_file_operations = {
+        .read =         default_read_file,
+        .write =        default_write_file,
+        .open =         default_open,
+};
+
 
 
 static struct inode *xuxfs_get_inode(struct super_block *sb, int mode, dev_t dev)
@@ -42,11 +72,6 @@ static struct inode *xuxfs_get_inode(struct super_block *sb, int mode, dev_t dev
         
         return inode;
 }
-
-static const struct super_operations sysfs_ops = {
-        .statfs         = simple_statfs,
-        .drop_inode     = generic_delete_inode,
-};
 
 
 static int xuxfs_mknod(struct inode *dir, struct dentry *dentry,
@@ -132,31 +157,6 @@ static int xuxfs_create_by_name(const char *name, mode_t mode,
         return error;
 }
 
-static ssize_t default_read_file(struct file *file, char __user *buf,
-                                 size_t count, loff_t *ppos)
-{
-        return 0;
-}
-
-static ssize_t default_write_file(struct file *file, const char __user *buf,
-                                   size_t count, loff_t *ppos)
-{
-        return count;
-}
-
-static int default_open(struct inode *inode, struct file *file)
-{
-        if (inode->i_private)
-                file->private_data = inode->i_private;
-
-        return 0;
-}
-
-const struct file_operations xuxfs_file_operations = {
-        .read =         default_read_file,
-        .write =        default_write_file,
-        .open =         default_open,
-};
 
 
 struct dentry *xuxfs_create_file(const char *name, mode_t mode,
