@@ -1,7 +1,7 @@
 
 #include <linux/module.h>
 #include <linux/fs.h>
-extern struct dentry *xuxfs_create_file(const char *name, mode_t mode,
+extern struct dentry *auditfs_create_file(const char *name, mode_t mode,
 					struct dentry *parent, void *data,
 					const struct file_operations *fops);
 
@@ -20,32 +20,32 @@ static const struct file_operations test_mark_fops = {
 };
 
 
-static __init int my_init_xuxfs(void)
+static __init int my_init_auditfs(void)
 {
          struct dentry *d_tracer;
 
         struct dentry *entry = NULL;
 
 
-        entry = xuxfs_create_file("xuxfs_enabled", 0644, d_tracer,&test_thresh , &test_mark_fops);
+        entry = auditfs_create_file("auditfs_enabled", 0644, d_tracer,&test_thresh , &test_mark_fops);
         if (!entry)
-                pr_warning("Could not create xuxfs 'xuxfs_enabled' entry\n");
+                pr_warning("Could not create auditfs 'auditfs_enabled' entry\n");
 
-        entry = xuxfs_create_file("xuxfs_options", 0644, d_tracer,
+        entry = auditfs_create_file("auditfs_options", 0644, d_tracer,
                                     &test_thresh, &test_mark_fops);
         if (!entry)
-                pr_warning("Could not create xuxfs 'xuxfs_options' entry\n");
+                pr_warning("Could not create auditfs 'auditfs_options' entry\n");
 
 	return 0;
 }
 
-static void __exit my_exit_xuxfs(void)
+static void __exit my_exit_auditfs(void)
 {
 	return;
 }
 
-module_init(my_init_xuxfs);
-module_exit(my_exit_xuxfs);
+module_init(my_init_auditfs);
+module_exit(my_exit_auditfs);
 
 MODULE_LICENSE("GPL");
 
