@@ -189,9 +189,14 @@ exit:
         return dentry;
 }
 EXPORT_SYMBOL_GPL(auditfs_create_file);
+struct dentry *auditfs_create_dir(const char *name, struct dentry *parent)
+{
+        return auditfs_create_file(name,
+                                   S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO,
+                                   parent, NULL, NULL);
+}
+EXPORT_SYMBOL_GPL(auditfs_create_dir);
 
-
-static struct kobject *audit_kobj;
 
 static int __init auditfs_init(void)
 {
@@ -200,12 +205,17 @@ static int __init auditfs_init(void)
 
 
 	retval = register_filesystem(&audit_fs_type);
-	if (retval)
-		kobject_put(audit_kobj);
-	else
-		auditfs_registered = true;
-
-	return retval;
+       if (!retval) {
+                auditfs_mount = vfs_kern_mount(&audit_fs_type,MS_KERNMOUNT,(&audit_fs_type)->name,NULL);
+                if (IS_ERR(auditfs_mount)) {
+                        printk(KERN_ERR "auditfs: could not mount!\n");
+                        retval= PTR_ERR(auditfs_mount);
+                        auditfs_mount = NULL;
+                        unregister_filesystem(&audit_fs_type);
+                        return retval;
+                }
+	}
+	return 0;
 }
 
 static void __exit auditfs_exit(void)
@@ -214,7 +224,6 @@ static void __exit auditfs_exit(void)
 
 	simple_release_fs(&auditfs_mount, &auditfs_mount_count);
 	unregister_filesystem(&audit_fs_type);
-	kobject_put(audit_kobj);
 }
 
 module_init(auditfs_init);
