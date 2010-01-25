@@ -1,96 +1,85 @@
 
 #include <linux/module.h>
 #include <linux/fs.h>
+#include <asm/uaccess.h>
+#define MAX_SIZE 1024
 
 
-extern struct dentry *auditfs_create_file(const char *name, mode_t mode,
+extern struct dentry *myfs_create_file(const char *name, mode_t mode,
 					struct dentry *parent, void *data,
 					const struct file_operations *fops);
-extern struct dentry *auditfs_create_dir(const char *name, struct dentry *parent);
+extern struct dentry *myfs_create_dir(const char *name, struct dentry *parent);
 
-unsigned long __read_mostly     test_thresh;
-
-static ssize_t default_read_file(struct file *file, char __user *buf,
+static int my_open_file(struct inode *inode, struct file *file)
+{
+//	file->private_data = message;
+}
+static ssize_t my_read_file(struct file *file, char __user *buf,
                                  size_t count, loff_t *ppos)
 {
-        return -1;
+	int p = *ppos;
+	if (p>=14)
+		return 0; 	
+      const char message[]="come from kernel!";
+	copy_to_user(buf, (void *)message, count);
+	printk("\nthis function be called\n");
+	return count;
 }
 
-static ssize_t default_write_file(struct file *file, const char __user *buf,
+static ssize_t my_write_file(struct file *file, const char __user *buf, 
                                    size_t count, loff_t *ppos)
 {
         return count;
 }
-
-static int default_open(struct inode *inode, struct file *file)
-{
-        if (inode->i_private)
-                file->private_data = inode->i_private;
-
-        return 0;
-}
-
-const struct file_operations auditfs_file_operations = {
-        .read =         default_read_file,
-        .write =        default_write_file,
-        .open =         default_open,
+struct file_operations fops = {
+	.open  = my_open_file,
+	.read  = my_read_file,
+	.write = my_write_file,
 };
-static int auditfs_u8_set(void *data, u64 val)
-{
-        *(u8 *)data = val;
-        return 0;
-}
-static int auditfs_u8_get(void *data, u64 *val)
-{
-        *val = *(u8 *)data;
-        return 0;
-}
-DEFINE_SIMPLE_ATTRIBUTE(fops_u8, auditfs_u8_get, auditfs_u8_set, "%llu\n");
-DEFINE_SIMPLE_ATTRIBUTE(fops_u8_ro, auditfs_u8_get, NULL, "%llu\n");
-DEFINE_SIMPLE_ATTRIBUTE(fops_u8_wo, NULL, auditfs_u8_set, "%llu\n");
-struct dentry *auditfs_create_u8(const char *name, mode_t mode,
+struct file_operations fops_ro = {
+	.open  = my_open_file,
+	.read  = my_read_file,
+};
+struct file_operations fops_wo = {
+	.open  = my_open_file,
+	.write = my_write_file,
+};
+struct dentry *myfs_create_u8(const char *name, mode_t mode,
                                  struct dentry *parent, u8 *value)
 {
         /* if there are no write bits set, make read only */
         if (!(mode & S_IWUGO))
-                return auditfs_create_file(name, mode, parent, value, &fops_u8_ro);
+                return myfs_create_file(name, mode, parent, value, &fops_ro);
         /* if there are no read bits set, make write only */
         if (!(mode & S_IRUGO))
-                return auditfs_create_file(name, mode, parent, value, &fops_u8_wo);
+                return myfs_create_file(name, mode, parent, value, &fops_wo);
 
-        return auditfs_create_file(name, mode, parent, value, &fops_u8);
+        return myfs_create_file(name, mode, parent, value, &fops);
 }
-EXPORT_SYMBOL_GPL(auditfs_create_u8);
-static u8 auditfs_test;
+EXPORT_SYMBOL_GPL(myfs_create_u8);
+static u8 myfs_test;
 
 
-static struct dentry *d_audit;
+static struct dentry *d_my;
 
-static __init int my_init_auditfs(void)
+static __init int my_init_myfs(void)
 {
 
-	int error;
-	if(!d_audit)
-	 d_audit = auditfs_create_dir("audit", NULL);
+	if(!d_my)
+	 d_my = myfs_create_dir("my", NULL);
 
-        if (!kernel_kobj) {
-                error = -ENOMEM;
-                return error;
-        }
-
-	auditfs_create_u8("auditfs_test",0664,NULL,&auditfs_test);
+	myfs_create_u8("myfs_test",0664,NULL,&myfs_test);
 
 	return 0;
 }
 
-static void __exit my_exit_auditfs(void)
+static void __exit my_exit_myfs(void)
 {
-	
 	return;
 }
 
-module_init(my_init_auditfs);
-module_exit(my_exit_auditfs);
+module_init(my_init_myfs);
+module_exit(my_exit_myfs);
 
 MODULE_LICENSE("GPL");
 
