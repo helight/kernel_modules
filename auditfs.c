@@ -22,12 +22,8 @@ static int auditfs_mount_count;
 
 struct super_block * auditfs_sb = NULL;
 
-static bool auditfs_registered;
+static bool auditfs_registered = NULL;
 
-static const struct super_operations sysfs_ops = {
-        .statfs         = simple_statfs,
-        .drop_inode     = generic_delete_inode,
-};
 
 static ssize_t default_read_file(struct file *file, char __user *buf,
                                  size_t count, loff_t *ppos)
@@ -67,7 +63,7 @@ static struct inode *auditfs_get_inode(struct super_block *sb, int mode, dev_t d
                 inode->i_gid = 0;
                 inode->i_blocks = 0;
                 inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
-                        inode->i_fop = &auditfs_file_operations;
+                inode->i_fop = &auditfs_file_operations;
                 }
         
         return inode;
@@ -101,11 +97,6 @@ static int auditfs_create(struct inode *dir, struct dentry *dentry, int mode)
         if (!res)
                 fsnotify_create(dir, dentry);
         return res;
-}
-
-static inline int auditfs_positive(struct dentry *dentry)
-{
-        return dentry->d_inode && !d_unhashed(dentry);
 }
 
 
@@ -160,15 +151,14 @@ static int auditfs_create_by_name(const char *name, mode_t mode,
 
 
 struct dentry *auditfs_create_file(const char *name, mode_t mode,
-           struct dentry *parent, void *data,
+			           struct dentry *parent, void *data,
                                    const struct file_operations *fops)
 {
         struct dentry *dentry = NULL;
         int error;
 
 
-        error = simple_pin_fs(&audit_fs_type, &auditfs_mount,
-                              &auditfs_mount_count);
+        error = simple_pin_fs(&audit_fs_type, &auditfs_mount, &auditfs_mount_count);
         if (error)
                 goto exit;
 
@@ -197,23 +187,69 @@ struct dentry *auditfs_create_dir(const char *name, struct dentry *parent)
 }
 EXPORT_SYMBOL_GPL(auditfs_create_dir);
 
+static inline int auditfs_positive(struct dentry *dentry)
+{
+        return dentry->d_inode && !d_unhashed(dentry);
+}
+
+static void __auditfs_remove(struct dentry *dentry, struct dentry *parent)
+{
+        int ret = 0;
+
+        if (auditfs_positive(dentry)) {
+                if (dentry->d_inode) {
+                        dget(dentry);
+                        switch (dentry->d_inode->i_mode & S_IFMT) {
+                        case S_IFDIR:
+                                ret = simple_rmdir(parent->d_inode, dentry);
+                                break;
+                        case S_IFLNK:
+                                kfree(dentry->d_inode->i_private);
+                                /* fall through */
+                        default:
+                                simple_unlink(parent->d_inode, dentry);
+                                break;
+                        }
+                        if (!ret)
+                                d_delete(dentry);
+                        dput(dentry);
+                }
+        }
+}
+
+void auditfs_remove(struct dentry *dentry)
+{
+        struct dentry *parent;
+
+        if (!dentry)
+                return;
+
+        parent = dentry->d_parent;
+        if (!parent || !parent->d_inode)
+                return;
+
+        mutex_lock(&parent->d_inode->i_mutex);
+        __auditfs_remove(dentry, parent);
+        mutex_unlock(&parent->d_inode->i_mutex);
+        simple_release_fs(&auditfs_mount, &auditfs_mount_count);
+}
+EXPORT_SYMBOL_GPL(auditfs_remove);
+
 
 static int __init auditfs_init(void)
 {
+	int ret = 0;
 
-	int retval;
-
-
-	retval = register_filesystem(&audit_fs_type);
-       if (!retval) {
-                auditfs_mount = vfs_kern_mount(&audit_fs_type,MS_KERNMOUNT,(&audit_fs_type)->name,NULL);
-                if (IS_ERR(auditfs_mount)) {
-                        printk(KERN_ERR "auditfs: could not mount!\n");
-                        retval= PTR_ERR(auditfs_mount);
-                        auditfs_mount = NULL;
-                        unregister_filesystem(&audit_fs_type);
-                        return retval;
-                }
+	ret = register_filesystem(&audit_fs_type);
+	if (ret) 
+		return ret;
+	
+        ret = simple_pin_fs(&audit_fs_type, &auditfs_mount, &auditfs_mount_count);
+	if (ret) {
+		ret= PTR_ERR(auditfs_mount);
+		auditfs_mount = NULL;
+		unregister_filesystem(&audit_fs_type);
+		return ret;
 	}
 	return 0;
 }
@@ -228,5 +264,5 @@ static void __exit auditfs_exit(void)
 
 module_init(auditfs_init);
 module_exit(auditfs_exit);
-MODULE_LICENSE("GPL");
+MODULE_LICENSE("Dual BSD/GPL");
 

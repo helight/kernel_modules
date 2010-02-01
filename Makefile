@@ -1,4 +1,4 @@
-obj-m += auditfs.o cr_file.o
+obj-m += auditfs.o file.o
 kernelpath = /usr/src/linux-2.6.30.5 
 #kernelpath = /usr/src/linux-headers-2.6.32
 #kernelpath = /lib/modules/2.6.32/build/
