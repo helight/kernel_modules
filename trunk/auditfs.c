@@ -1,5 +1,4 @@
 #include <linux/module.h>
-#include <linux/pagemap.h>
 #include <linux/fs.h>
 #include <linux/fsnotify.h>
 #include <linux/init.h>
@@ -7,23 +6,17 @@
 #include <linux/kobject.h>
 #include <linux/magic.h>
 #include <linux/mount.h>
-//#include "auditfs.h"
-
-
+#include <linux/pagemap.h>
 
 #define XUXFS_MAGIC 0x3966477
 #define XUXFS_DIR   0x0001
 #define PAGE_CACHE_MASK         PAGE_MASK
 #define PAGE_MASK       (~(PAGE_SIZE-1))
 
-
 static struct vfsmount *auditfs_mount ;
 static int auditfs_mount_count;
-
 struct super_block * auditfs_sb = NULL;
-
 static bool auditfs_registered = NULL;
-
 
 static ssize_t default_read_file(struct file *file, char __user *buf,
                                  size_t count, loff_t *ppos)
@@ -51,8 +44,6 @@ const struct file_operations auditfs_file_operations = {
         .open =         default_open,
 };
 
-
-
 static struct inode *auditfs_get_inode(struct super_block *sb, int mode, dev_t dev)
 {
         struct inode *inode = new_inode(sb);
@@ -68,7 +59,6 @@ static struct inode *auditfs_get_inode(struct super_block *sb, int mode, dev_t d
         
         return inode;
 }
-
 
 static int auditfs_mknod(struct inode *dir, struct dentry *dentry,
                          int mode, dev_t dev)
@@ -99,16 +89,12 @@ static int auditfs_create(struct inode *dir, struct dentry *dentry, int mode)
         return res;
 }
 
-
 static int auditfs_fill_super(struct super_block *sb, void *data, int silent)
 {
         static struct tree_descr auditfs_files[] = {{""}};
 
         return simple_fill_super(sb, XUXFS_MAGIC, auditfs_files);
 }
-
-
-
 
 static int audit_get_sb(struct file_system_type *fs_type,
 			int flags, const char *dev_name,
@@ -123,7 +109,6 @@ static struct file_system_type audit_fs_type = {
 	.get_sb =	audit_get_sb,
 	.kill_sb =	kill_litter_super,
 };
-
 
 static int auditfs_create_by_name(const char *name, mode_t mode,
                                   struct dentry *parent,
@@ -147,8 +132,6 @@ static int auditfs_create_by_name(const char *name, mode_t mode,
 
         return error;
 }
-
-
 
 struct dentry *auditfs_create_file(const char *name, mode_t mode,
 			           struct dentry *parent, void *data,
@@ -179,6 +162,7 @@ exit:
         return dentry;
 }
 EXPORT_SYMBOL_GPL(auditfs_create_file);
+
 struct dentry *auditfs_create_dir(const char *name, struct dentry *parent)
 {
         return auditfs_create_file(name,
@@ -234,7 +218,6 @@ void auditfs_remove(struct dentry *dentry)
         simple_release_fs(&auditfs_mount, &auditfs_mount_count);
 }
 EXPORT_SYMBOL_GPL(auditfs_remove);
-
 
 static int __init auditfs_init(void)
 {
