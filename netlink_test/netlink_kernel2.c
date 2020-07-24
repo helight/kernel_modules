@@ -35,6 +35,7 @@ static void test_link(struct sk_buff *skb)
     struct nlmsghdr *nlh;
     u32             rlen;
     void            *data;
+    struct netlink_ext_ack extack = {};
 
     while (skb->len >= NLMSG_SPACE(0)) {
         nlh = nlmsg_hdr(skb);
@@ -45,7 +46,7 @@ static void test_link(struct sk_buff *skb)
                 rlen = skb->len;
         data = NLMSG_DATA(nlh);
         printk("link:%s", (char *)data);
-        netlink_ack(skb, nlh, 0);
+        netlink_ack(skb, nlh, 0, &extack);
         skb_pull(skb, rlen);
     }
 }
@@ -55,7 +56,7 @@ int __init init_link(void)
     struct netlink_kernel_cfg cfg = {
 		.input = test_link,//该函数原型可参考内核代码，其他参数默认即可
 	};
-    xux_sock = netlink_kernel_create(&init_net, NETLINK_XUX, cfg);
+    xux_sock = netlink_kernel_create(&init_net, NETLINK_XUX, &cfg);
     if (!xux_sock){
         printk("cannot initialize netlink socket");
         return -1;
