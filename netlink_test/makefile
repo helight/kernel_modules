@@ -15,7 +15,8 @@ all:
 client:
 	gcc netlink_client2.c -o netlink_client2
 	gcc netlink_client.c -o netlink_client
-	
+
 #clean
 clean:
 	make -C $(LINUX_KERNEL_PATH) M=$(CURRENT_PATH) clean
+	rm  -rf netlink_client netlink_client2
