@@ -59,7 +59,7 @@ int main()
 
     printf("Sending message to kernel\n");
 
-    sendmsg(sock_fd,&msg,0);    //msg -> find the (destination) socket name: dest
+    sendmsg(sock_fd, &msg, 0);    //msg -> find the (destination) socket name: dest
 
                                 //msg -> iov -> nlh -> "Hello"
     printf("Waiting for message from kernel\n");

@@ -31,12 +31,38 @@ struct netlink_data{
         char data[1024];
 };
 
-int link_open(void);
+int link_open(void)
+{
+        int saved_errno;
+        int fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_XUX);
+
+        if (fd < 0) {
+                saved_errno = errno;
+                if (errno == EINVAL || errno == EPROTONOSUPPORT ||
+                                errno == EAFNOSUPPORT)
+                        printf("Error - audit support not in kernel");
+                else
+                        printf("Error opening audit netlink socket (%s)",
+                                strerror(errno));
+                errno = saved_errno;
+                return fd;
+        }
+        if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1) {
+                saved_errno = errno;
+                close(fd);
+                        printf("Error setting audit netlink socket CLOEXEC flag (%s)",
+                        strerror(errno));
+                errno = saved_errno;
+                return -1;
+        }
+        return fd;
+}
 
 int main(int args, char *argv[])
 {
         struct netlink_data nldata;
         struct nlmsghdr *msg = &nldata.msg;
+        struct msghdr msg2;  //msghdr includes: struct iovec *   msg_iov;
         int retval;
         struct sockaddr_nl addr;
         char *data = "hello world!\0";
@@ -64,31 +90,4 @@ int main(int args, char *argv[])
                         NLMSG_DATA(msg));
         close(fd);
         return 0;
-}
-
-int link_open(void)
-{
-        int saved_errno;
-        int fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_XUX);
-
-        if (fd < 0) {
-                saved_errno = errno;
-                if (errno == EINVAL || errno == EPROTONOSUPPORT ||
-                                errno == EAFNOSUPPORT)
-                        printf("Error - audit support not in kernel");
-                else
-                        printf("Error opening audit netlink socket (%s)",
-                                strerror(errno));
-                errno = saved_errno;
-                return fd;
-        }
-        if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1) {
-                saved_errno = errno;
-                close(fd);
-                        printf("Error setting audit netlink socket CLOEXEC flag (%s)",
-                        strerror(errno));
-                errno = saved_errno;
-                return -1;
-        }
-        return fd;
 }
