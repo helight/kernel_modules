@@ -21,9 +21,9 @@ int main()
 {
     //int socket(int domain, int type, int protocol);
 
-    sock_fd=socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
+    sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
 
-    if(sock_fd<0)
+    if(sock_fd < 0)
         return -1;
 
     memset(&src_addr, 0, sizeof(src_addr));
@@ -59,9 +59,10 @@ int main()
 
     printf("Sending message to kernel\n");
 
-    sendmsg(sock_fd, &msg, 0);    //msg -> find the (destination) socket name: dest
+    sendmsg(sock_fd, &msg, 0);    
+    //msg -> find the (destination) socket name: dest
+    //msg -> iov -> nlh -> "Hello"
 
-                                //msg -> iov -> nlh -> "Hello"
     printf("Waiting for message from kernel\n");
 
     /* Read message from kernel */

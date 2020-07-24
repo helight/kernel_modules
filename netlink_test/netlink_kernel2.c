@@ -63,7 +63,6 @@ int __init init_link(void)
     } else
         xux_sock->sk_sndtimeo = MAX_SCHEDULE_TIMEOUT;
 
-
     printk("Init OK!\n");
     return 0;
 }

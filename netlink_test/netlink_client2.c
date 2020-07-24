@@ -80,14 +80,41 @@ int main(int args, char *argv[])
         addr.nl_groups = 0;
 
         memcpy(NLMSG_DATA(msg), data, size);
+        /*
+        #include <sys/types.h>
+       #include <sys/socket.h>
 
-        retval = sendto(fd, &nldata, msg->nlmsg_len, 0,
-                        (struct sockaddr*)&addr, sizeof(addr));
+       ssize_t send(int sockfd, const void *buf, size_t len, int flags);
 
+       ssize_t sendto(int sockfd, const void *buf, size_t len, int flags,
+                      const struct sockaddr *dest_addr, socklen_t addrlen);
+
+       ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags);
+        */
+
+        // retval = sendto(fd, &nldata, msg->nlmsg_len, 0,
+        //                (struct sockaddr*)&addr, sizeof(addr));
+        retval = send(fd, &nldata, msg->nlmsg_len, 0);
+        printf("send ret: %d\n", retval);
         printf("hello:%02x len: %d  data:%s\n",
                         NLMSG_DATA(msg),
                         sizeof(NLMSG_DATA(msg)),
                         NLMSG_DATA(msg));
+        /*
+        ssize_t recv(int sockfd, void *buf, size_t len, int flags);
+
+       ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
+                        struct sockaddr *src_addr, socklen_t *addrlen);
+
+       ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags); 
+        */
+        retval = recv(fd, &nldata, msg->nlmsg_len, 0);
+        printf("recv ret: %d\n", retval);
+        printf("hello:%02x len: %d  data:%s\n",
+                        NLMSG_DATA(msg),
+                        sizeof(NLMSG_DATA(msg)),
+                        NLMSG_DATA(msg));
+
         close(fd);
         return 0;
 }
