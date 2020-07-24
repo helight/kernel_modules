@@ -65,7 +65,7 @@ int main(int args, char *argv[])
         struct msghdr msg2;  //msghdr includes: struct iovec *   msg_iov;
         int retval;
         struct sockaddr_nl addr;
-        char *data = "hello world!\0";
+        char *data = "hello world!  xxxxx\0";
         int size = strlen(data);
 
         int fd = link_open();
@@ -109,7 +109,7 @@ int main(int args, char *argv[])
        ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags); 
         */
         retval = recv(fd, &nldata, msg->nlmsg_len, 0);
-        printf("recv ret: %d\n", retval);
+        printf("recv ret: %d data: %s\n", retval, nldata);
         printf("hello:%02x len: %d  data:%s\n",
                         NLMSG_DATA(msg),
                         sizeof(NLMSG_DATA(msg)),
