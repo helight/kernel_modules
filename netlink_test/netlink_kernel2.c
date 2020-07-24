@@ -35,7 +35,10 @@ static void test_link(struct sk_buff *skb)
     struct nlmsghdr *nlh;
     u32             rlen;
     void            *data;
+    int msg_size;
+    char *msg = "hello,from kernel";
     struct netlink_ext_ack extack = {};
+    msg_size = strlen(msg);
 
     while (skb->len >= NLMSG_SPACE(0)) {
         nlh = nlmsg_hdr(skb);
@@ -45,7 +48,21 @@ static void test_link(struct sk_buff *skb)
         if (rlen > skb->len)
                 rlen = skb->len;
         data = NLMSG_DATA(nlh);
-        printk("link:%s", (char *)data);
+        printk("receive data from user process: %s", (char *)data);
+        
+        // send data to userspace
+        struct sk_buff *skb_out = nlmsg_new(msg_size, 0);    //nlmsg_new - Allocate a new netlink message: skb_out
+        if(!skb_out)
+        {
+            printk(KERN_ERR "Failed to allocate new skb\n");
+            return;
+        }
+
+	    nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);
+        	//so there should be convention: cb[48] is divided into creds/pid/dst_group...to convey those info
+        NETLINK_CB(skb_out).dst_group = 0;                  /* not in mcast group */
+        strncpy(nlmsg_data(nlh), msg, msg_size); //char *strncpy(char *dest, const char *src, size_t count)
+        //msg "Hello from kernel" => nlh -> skb_out  
         netlink_ack(skb, nlh, 0, &extack);
         skb_pull(skb, rlen);
     }

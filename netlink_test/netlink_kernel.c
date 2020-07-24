@@ -13,7 +13,7 @@ static void hello_nl_recv_msg(struct sk_buff *skb)
 	int pid;
 	struct sk_buff *skb_out;
 	int msg_size;
-	char *msg="hello,from kernel";
+	char *msg = "hello,from kernel";
 	int res;
 
 	printk(KERN_INFO "Entering: %s\n", __FUNCTION__);
@@ -32,7 +32,7 @@ static void hello_nl_recv_msg(struct sk_buff *skb)
 
 	//for sending...
 	pid = nlh->nlmsg_pid; // Sending process port ID, will send new message back to the 'user space sender'
-	skb_out = nlmsg_new(msg_size,0);    //nlmsg_new - Allocate a new netlink message: skb_out
+	skb_out = nlmsg_new(msg_size, 0);    //nlmsg_new - Allocate a new netlink message: skb_out
 
 	if(!skb_out)
 	{
@@ -40,7 +40,7 @@ static void hello_nl_recv_msg(struct sk_buff *skb)
 		return;
 	}
 
-	nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE,msg_size, 0);  
+	nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);  
 	/* nlmsg_put - Add a new netlink message to an skb
 	 * @skb: socket buffer to store message in
 	 * @portid: netlink PORTID of requesting application
