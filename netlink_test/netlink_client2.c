@@ -110,7 +110,7 @@ int main(int args, char *argv[])
         printf("Waiting for message from kernel\n");
         ret = recvmsg(fd, &msg, 0);
 
-        printf("recv ret: %d data: %s\n", len, (char *)NLMSG_DATA(nlh));
+        printf("recv ret: %d data: %s\n", ret, (char *)NLMSG_DATA(nlh));
 
         close(fd);
         return 0;
