@@ -27,33 +27,6 @@
 #define NETLINK_XUX           31       /* testing */  
 #define MAX_PAYLOAD 1024 /* maximum payload size*/
 
-int link_open(void)
-{
-        struct sockaddr_nl src_addr;
-        int saved_errno;
-        int fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_XUX);
-
-        if (fd < 0) {
-                saved_errno = errno;
-                if (errno == EINVAL || errno == EPROTONOSUPPORT ||
-                                errno == EAFNOSUPPORT)
-                        printf("Error - audit support not in kernel");
-                else
-                        printf("Error opening audit netlink socket (%s)",
-                                strerror(errno));
-                errno = saved_errno;
-                return fd;
-        }
-       
-        memset(&src_addr, 0, sizeof(src_addr));
-        src_addr.nl_family = AF_NETLINK;
-        // sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;
-        src_addr.nl_pid = getpid(); /* self pid */
-
-        bind(fd, (struct sockaddr *) &src_addr, sizeof(src_addr));
-
-        return fd;
-}
 
 int main(int args, char *argv[])
 {
@@ -67,8 +40,22 @@ int main(int args, char *argv[])
         char *data = "hello world!  xxxxx\0";
         int size = strlen(data);
 
-        int fd = link_open();
+        struct sockaddr_nl src_addr;
+        int saved_errno;
+        int fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_XUX);
 
+        if (fd < 0) {
+                printf("Error - audit support not in kernel");
+                return fd;
+        }
+       
+        memset(&src_addr, 0, sizeof(src_addr));
+        src_addr.nl_family = AF_NETLINK;
+        src_addr.nl_pid = getpid(); /* self pid */
+
+        bind(fd, (struct sockaddr *) &src_addr, sizeof(src_addr));
+
+        memset(&dest_addr, 0, sizeof(dest_addr));
         dest_addr.nl_family = AF_NETLINK;
         dest_addr.nl_pid = 0; /* For Linux Kernel */
         dest_addr.nl_groups = 0; /* unicast */
@@ -78,8 +65,8 @@ int main(int args, char *argv[])
         memset(nlmsg, 0, NLMSG_SPACE(MAX_PAYLOAD));
         nlmsg->nlmsg_len = NLMSG_SPACE(MAX_PAYLOAD);
         nlmsg->nlmsg_pid = getpid();  //self pid
-        // nlmsg->nlmsg_type = 0;
         nlmsg->nlmsg_flags = 0;
+        // nlmsg->nlmsg_type = 0;
         // nlmsg->nlmsg_seq = 0;
 
         // strcpy(NLMSG_DATA(nlmsg), "Hello"); 
@@ -111,6 +98,7 @@ int main(int args, char *argv[])
         // retval = sendto(fd, &nldata, msg->nlmsg_len, 0,
         //                (struct sockaddr*)&addr, sizeof(addr));
         printf("Sending message to kernel\n");
+        
         retval = sendmsg(fd, &msg, 0);
         printf("send ret: %d\n", retval);
         // printf("hello:%02x len: %d  data:%s\n",

@@ -41,6 +41,26 @@ static void test_link(struct sk_buff *skb)
     */
     nlh = nlmsg_hdr(skb);
     printk("receive data from user process: %s", (char *)NLMSG_DATA(nlh));
+
+    //for sending...
+	pid = nlh->nlmsg_pid; // Sending process port ID, will send new message back to the 'user space sender'
+	skb_out = nlmsg_new(msg_size, 0);    //nlmsg_new - Allocate a new netlink message: skb_out
+
+	if(!skb_out)
+	{
+		printk(KERN_ERR "Failed to allocate new skb\n");
+		return;
+	}
+    // 这里只是修改skb_out的数据长度
+	nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);  
+    NETLINK_CB(skb_out).dst_group = 0;    
+    strncpy(nlmsg_data(nlh), msg, msg_size); //char *strncpy(char *dest, const char *src, size_t count)
+	//msg "Hello from kernel" => nlh -> skb_out
+	res = nlmsg_unicast(nl_sk, skb_out, pid); //nlmsg_unicast - unicast a netlink message
+	//@pid: netlink pid of the destination socket
+	if(res < 0)
+		printk(KERN_INFO "Error while sending bak to user\n");
+
 }
 
 int __init init_link(void)
