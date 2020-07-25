@@ -32,6 +32,30 @@ static void hello_nl_recv_msg(struct sk_buff *skb)
 
 	//for sending...
 	pid = nlh->nlmsg_pid; // Sending process port ID, will send new message back to the 'user space sender'
+
+    /**
+    * nlmsg_new - Allocate a new netlink message
+    * @payload: size of the message payload
+    * @flags: the type of memory to allocate.
+    *
+    * Use NLMSG_DEFAULT_SIZE if the size of the payload isn't known
+    * and a good default is needed.
+    
+    static inline struct sk_buff *nlmsg_new(size_t payload, gfp_t flags)
+    {
+        return alloc_skb(nlmsg_total_size(payload), flags);
+    }
+    static inline int nlmsg_total_size(int payload)
+    {
+        return NLMSG_ALIGN(nlmsg_msg_size(payload));
+    }
+    static inline int nlmsg_msg_size(int payload)
+    {
+        return NLMSG_HDRLEN + payload;
+    }
+    #define NLMSG_HDRLEN     ((int) NLMSG_ALIGN(sizeof(struct nlmsghdr)))
+    */
+
 	skb_out = nlmsg_new(msg_size, 0);    //nlmsg_new - Allocate a new netlink message: skb_out
 
 	if(!skb_out)
@@ -39,7 +63,7 @@ static void hello_nl_recv_msg(struct sk_buff *skb)
 		printk(KERN_ERR "Failed to allocate new skb\n");
 		return;
 	}
-
+    // 这里只是修改skb_out的数据长度
 	nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);  
 	/* nlmsg_put - Add a new netlink message to an skb
 	 * @skb: socket buffer to store message in
@@ -59,6 +83,27 @@ static void hello_nl_recv_msg(struct sk_buff *skb)
 	//map skb->cb (char cb[48] __aligned(8); control buffer) to "struct netlink_skb_parms", so it has field pid/dst_group
 	//so there should be convention: cb[48] is divided into creds/pid/dst_group...to convey those info
 	NETLINK_CB(skb_out).dst_group = 0;                  /* not in mcast group */
+    // 把实际数据放入到skb_out->data->data中，skb_out->data指向的是nlh，
+    // nlmsg_data(nlh) #define NLMSG_DATA(nlh)  ((void*)(((char*)nlh) + NLMSG_LENGTH(0)))
+    /**
+    * nlmsg_data - head of message payload
+    * @nlh: netlink message header
+    
+    static inline void *nlmsg_data(const struct nlmsghdr *nlh)
+    {
+        return (unsigned char *) nlh + NLMSG_HDRLEN;
+    }
+
+    #define NLMSG_HDRLEN     ((int) NLMSG_ALIGN(sizeof(struct nlmsghdr)))
+    */
+    // struct nlmsghdr {
+    //    __u32       nlmsg_len;  /* Length of message including header */
+    //    __u16       nlmsg_type; /* Message content */
+    //    __u16       nlmsg_flags;    /* Additional flags */
+    //    __u32       nlmsg_seq;  /* Sequence number */
+    //    __u32       nlmsg_pid;  /* Sending process port ID */
+    //};
+    
 	strncpy(nlmsg_data(nlh), msg, msg_size); //char *strncpy(char *dest, const char *src, size_t count)
 	//msg "Hello from kernel" => nlh -> skb_out
 	res = nlmsg_unicast(nl_sk, skb_out, pid); //nlmsg_unicast - unicast a netlink message
