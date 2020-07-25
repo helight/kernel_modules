@@ -32,7 +32,6 @@ int main(int args, char *argv[])
     src_addr.nl_pid = getpid(); /* self pid */
 
     //int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
-
     bind(sock_fd, (struct sockaddr*)&src_addr, sizeof(src_addr));
 
     memset(&dest_addr, 0, sizeof(dest_addr));
