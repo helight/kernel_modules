@@ -12,9 +12,11 @@ static void hello_nl_recv_msg(struct sk_buff *skb)
 	struct nlmsghdr *nlh;
 	int pid;
 	struct sk_buff *skb_out;
+    int res;
+
 	int msg_size;
 	char *msg = "hello,from kernel";
-	int res;
+	
 
 	printk(KERN_INFO "Entering: %s\n", __FUNCTION__);
 

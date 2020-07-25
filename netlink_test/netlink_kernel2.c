@@ -26,6 +26,9 @@ static struct sock *xux_sock = NULL;
 static void test_link(struct sk_buff *skb)
 {
     struct nlmsghdr *nlh;
+    int pid;
+	struct sk_buff *skb_out;
+    int res;
 
     int msg_size;
     char *msg = "hello,from kernel";
@@ -56,7 +59,7 @@ static void test_link(struct sk_buff *skb)
     NETLINK_CB(skb_out).dst_group = 0;    
     strncpy(nlmsg_data(nlh), msg, msg_size); //char *strncpy(char *dest, const char *src, size_t count)
 	//msg "Hello from kernel" => nlh -> skb_out
-	res = nlmsg_unicast(nl_sk, skb_out, pid); //nlmsg_unicast - unicast a netlink message
+	res = nlmsg_unicast(xux_sock, skb_out, pid); //nlmsg_unicast - unicast a netlink message
 	//@pid: netlink pid of the destination socket
 	if(res < 0)
 		printk(KERN_INFO "Error while sending bak to user\n");
