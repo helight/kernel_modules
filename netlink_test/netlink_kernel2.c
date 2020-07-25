@@ -20,23 +20,17 @@
 #include <linux/skbuff.h>
 
 #define NETLINK_XUX           31       /* testing */  
-#define MSG_SIZE NLMSG_SPACE(2048)
 
-static struct sock *xux_sock;
-
-struct netlink_data{
-        struct nlmsghdr msg;
-        char data[1024];
-};
+static struct sock *xux_sock = NULL;
 
 static void test_link(struct sk_buff *skb)
 {
     struct nlmsghdr *nlh;
-    u32             rlen;
-    void            *data;
+
     int msg_size;
     char *msg = "hello,from kernel";
-    struct netlink_ext_ack extack = {};
+
+    printk(KERN_INFO "Entering: %s\n", __FUNCTION__);
     msg_size = strlen(msg);
 
     /*
@@ -45,33 +39,8 @@ static void test_link(struct sk_buff *skb)
         return (struct nlmsghdr *)skb->data;
     }
     */
-    printk("receive data from user process:");
-    while (skb->len >= NLMSG_SPACE(0)) {
-        nlh = nlmsg_hdr(skb);
-        if (nlh->nlmsg_len < sizeof(*nlh) || skb->len < nlh->nlmsg_len)
-                return;
-        rlen = NLMSG_ALIGN(nlh->nlmsg_len);
-        if (rlen > skb->len)
-                rlen = skb->len;
-        data = NLMSG_DATA(nlh);
-        printk("receive data from user process: %s", (char *)data);
-        
-        // send data to userspace
-        struct sk_buff *skb_out = nlmsg_new(msg_size, 0);    //nlmsg_new - Allocate a new netlink message: skb_out
-        if(!skb_out)
-        {
-            printk(KERN_ERR "Failed to allocate new skb\n");
-            return;
-        }
-
-	    nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);
-        //so there should be convention: cb[48] is divided into creds/pid/dst_group...to convey those info
-        NETLINK_CB(skb_out).dst_group = 0;                  /* not in mcast group */
-        strncpy(nlmsg_data(nlh), msg, msg_size); //char *strncpy(char *dest, const char *src, size_t count)
-        //msg "Hello from kernel" => nlh -> skb_out  
-        netlink_ack(skb, nlh, 0, &extack);
-        skb_pull(skb, rlen);
-    }
+    nlh = nlmsg_hdr(skb);
+    printk("receive data from user process: %s", (char *)NLMSG_DATA(nlh));
 }
 
 int __init init_link(void)
@@ -83,9 +52,8 @@ int __init init_link(void)
     if (!xux_sock){
         printk("cannot initialize netlink socket");
         return -1;
-    } else
-        xux_sock->sk_sndtimeo = MAX_SCHEDULE_TIMEOUT;
-
+    } 
+    
     printk("Init OK!\n");
     return 0;
 }
