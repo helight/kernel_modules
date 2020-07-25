@@ -40,6 +40,12 @@ static void test_link(struct sk_buff *skb)
     struct netlink_ext_ack extack = {};
     msg_size = strlen(msg);
 
+/*
+static inline struct nlmsghdr *nlmsg_hdr(const struct sk_buff *skb)
+{
+    return (struct nlmsghdr *)skb->data;
+}
+*/
     while (skb->len >= NLMSG_SPACE(0)) {
         nlh = nlmsg_hdr(skb);
         if (nlh->nlmsg_len < sizeof(*nlh) || skb->len < nlh->nlmsg_len)

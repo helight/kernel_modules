@@ -67,18 +67,19 @@ int main(int args, char *argv[])
 
         int fd = link_open();
 
+        dest_addr.nl_family = AF_NETLINK;
+        dest_addr.nl_pid = 0;
+        dest_addr.nl_groups = 0;
+
         // 构造nlmsg空间
         nlmsg = (struct nlmsghdr *)malloc(NLMSG_SPACE(MAX_PAYLOAD));
         memset(nlmsg, 0, NLMSG_SPACE(MAX_PAYLOAD));
         nlmsg->nlmsg_len = NLMSG_SPACE(MAX_PAYLOAD);
         nlmsg->nlmsg_pid = getpid();  //self pid
-        nlmsg->nlmsg_type = 0;
+        // nlmsg->nlmsg_type = 0;
         nlmsg->nlmsg_flags = 0;
-        nlmsg->nlmsg_seq = 0;
+        // nlmsg->nlmsg_seq = 0;
 
-        dest_addr.nl_family = AF_NETLINK;
-        dest_addr.nl_pid = 0;
-        dest_addr.nl_groups = 0;
         // strcpy(NLMSG_DATA(nlmsg), "Hello"); 
         // 给数据空间写数据
         // /usr/include/linux/netlink.h:94:#define NLMSG_DATA(nlh)  ((void*)(((char*)nlh) + NLMSG_LENGTH(0)))
@@ -106,43 +107,26 @@ int main(int args, char *argv[])
 
         // retval = sendto(fd, &nldata, msg->nlmsg_len, 0,
         //                (struct sockaddr*)&addr, sizeof(addr));
+        printf("Sending message to kernel\n");
         retval = sendmsg(fd, &msg, 0);
         printf("send ret: %d\n", retval);
-        printf("hello:%02x len: %d  data:%s\n",
-                        NLMSG_DATA(msg),
-                        sizeof(NLMSG_DATA(msg)),
-                        NLMSG_DATA(msg));
+        // printf("hello:%02x len: %d  data:%s\n",
+        //                NLMSG_DATA(msg),
+        //                sizeof(NLMSG_DATA(msg)),
+        //                NLMSG_DATA(msg));
         /*
         ssize_t recv(int sockfd, void *buf, size_t len, int flags);
 
        ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
                         struct sockaddr *src_addr, socklen_t *addrlen);
 
-       ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags); 
+       ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);
         */
 
-        int len;
-        /* 8192 to avoid message truncation on platforms with
-        page size > 4096 */
-        struct nlmsghdr buf[8192/sizeof(struct nlmsghdr)];
-        struct iovec iov2 = { buf, sizeof(buf) };
-        struct sockaddr_nl sa2;
-        struct msghdr msg2;
-        struct nlmsghdr *nh;
+        printf("Waiting for message from kernel\n");
+        int  len = recvmsg(fd, &msg, 0);
 
-        msg2 = { &sa2, sizeof(sa2), &iov2, 1, NULL, 0, 0 };
-        len = recvmsg(fd, &msg2, 0);
-
-        for (nh = (struct nlmsghdr *) buf; NLMSG_OK (nh, len);
-                nh = NLMSG_NEXT(nh, len)) {
-                /* The end of multipart message */
-                if (nh->nlmsg_type == NLMSG_DONE)
-                        return;
-
-                // if (nh->nlmsg_type == NLMSG_ERROR)
-                        /* Do some error handling */
-                printf("recv ret: %d data: %s\n", len, NLMSG_DATA(nh));
-        }
+        printf("recv ret: %d data: %s\n", len, (char *)NLMSG_DATA(nlmsg));
 
         close(fd);
         return 0;
