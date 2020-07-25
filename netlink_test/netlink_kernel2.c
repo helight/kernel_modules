@@ -19,7 +19,7 @@
 #include <linux/netlink.h>
 #include <linux/skbuff.h>
 
-#define NETLINK_XUX           21       /* testing */  
+#define NETLINK_XUX           31       /* testing */  
 #define MSG_SIZE NLMSG_SPACE(2048)
 
 static struct sock *xux_sock;

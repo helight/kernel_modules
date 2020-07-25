@@ -24,7 +24,7 @@
 #include <sys/socket.h>
 #include <linux/netlink.h>
 
-#define NETLINK_XUX           21       /* testing */  
+#define NETLINK_XUX           31       /* testing */  
 #define MAX_PAYLOAD 1024 /* maximum payload size*/
 
 int link_open(void)
