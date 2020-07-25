@@ -88,7 +88,7 @@ int main(int args, char *argv[])
         // /usr/include/linux/netlink.h:92:#define NLMSG_LENGTH(len) ((len) + NLMSG_HDRLEN)
         // /usr/include/linux/netlink.h:91:#define NLMSG_HDRLEN	 ((int) NLMSG_ALIGN(sizeof(struct nlmsghdr)))
         // memcpy(NLMSG_DATA(nlmsg), data, size);
-        strcpy(NLMSG_DATA(nlh), "Hello this is a msg from userspace");
+        strcpy(NLMSG_DATA(nlmsg), "Hello this is a msg from userspace");
 
         iov.iov_base = (void *)nlmsg;         //iov -> nlh
         iov.iov_len = nlmsg->nlmsg_len;
