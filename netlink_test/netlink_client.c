@@ -62,7 +62,8 @@ int main()
 
     printf("Sending message to kernel\n");
 
-    sendmsg(sock_fd, &msg, 0);    
+    int ret = sendmsg(sock_fd, &msg, 0);   
+    printf("send ret: %d\n", ret); 
     //msg -> find the (destination) socket name: dest
     //msg -> iov -> nlh -> "Hello"
 

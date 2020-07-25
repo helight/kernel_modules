@@ -29,7 +29,7 @@
 
 int link_open(void)
 {
-        struct sockaddr_nl sa;
+        struct sockaddr_nl src_addr;
         int saved_errno;
         int fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_XUX);
 
@@ -45,12 +45,13 @@ int link_open(void)
                 return fd;
         }
        
-        memset(&sa, 0, sizeof(sa));
-        sa.nl_family = AF_NETLINK;
+        memset(&src_addr, 0, sizeof(src_addr));
+        src_addr.nl_family = AF_NETLINK;
         // sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;
-        sa.nl_pid = getpid(); /* self pid */
+        src_addr.nl_pid = getpid(); /* self pid */
 
-        bind(fd, (struct sockaddr *) &sa, sizeof(sa));
+        bind(fd, (struct sockaddr *) &src_addr, sizeof(src_addr));
+
         return fd;
 }
 
@@ -69,8 +70,8 @@ int main(int args, char *argv[])
         int fd = link_open();
 
         dest_addr.nl_family = AF_NETLINK;
-        dest_addr.nl_pid = 0;
-        dest_addr.nl_groups = 0;
+        dest_addr.nl_pid = 0; /* For Linux Kernel */
+        dest_addr.nl_groups = 0; /* unicast */
 
         // 构造nlmsg空间
         nlmsg = (struct nlmsghdr *)malloc(NLMSG_SPACE(MAX_PAYLOAD));
@@ -86,7 +87,8 @@ int main(int args, char *argv[])
         // /usr/include/linux/netlink.h:94:#define NLMSG_DATA(nlh)  ((void*)(((char*)nlh) + NLMSG_LENGTH(0)))
         // /usr/include/linux/netlink.h:92:#define NLMSG_LENGTH(len) ((len) + NLMSG_HDRLEN)
         // /usr/include/linux/netlink.h:91:#define NLMSG_HDRLEN	 ((int) NLMSG_ALIGN(sizeof(struct nlmsghdr)))
-        memcpy(NLMSG_DATA(nlmsg), data, size);
+        // memcpy(NLMSG_DATA(nlmsg), data, size);
+        strcpy(NLMSG_DATA(nlh), "Hello this is a msg from userspace");
 
         iov.iov_base = (void *)nlmsg;         //iov -> nlh
         iov.iov_len = nlmsg->nlmsg_len;
@@ -125,9 +127,9 @@ int main(int args, char *argv[])
         */
 
         printf("Waiting for message from kernel\n");
-        int  len = recvmsg(fd, &msg, 0);
+        // int  len = recvmsg(fd, &msg, 0);
 
-        printf("recv ret: %d data: %s\n", len, (char *)NLMSG_DATA(nlmsg));
+        // printf("recv ret: %d data: %s\n", len, (char *)NLMSG_DATA(nlmsg));
 
         close(fd);
         return 0;
