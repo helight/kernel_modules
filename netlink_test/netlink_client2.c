@@ -11,6 +11,7 @@
  * Description:  
  */
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -46,7 +47,7 @@ int link_open(void)
        
         memset(&sa, 0, sizeof(sa));
         sa.nl_family = AF_NETLINK;
-        sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;
+        // sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;
         sa.nl_pid = getpid(); /* self pid */
 
         bind(fd, (struct sockaddr *) &sa, sizeof(sa));
