@@ -10,7 +10,7 @@
  *
  * Description:  
  */
-/*
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -23,18 +23,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <linux/netlink.h>
-*/
-#include <sys/types.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <string.h>
-#include <asm/types.h>
-#include <linux/netlink.h>
-#include <linux/socket.h>
-#include <errno.h>
 
 #define NETLINK_XUX           31       /* testing */  
 #define MAX_PAYLOAD 1024 /* maximum payload size*/

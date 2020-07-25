@@ -50,7 +50,7 @@ int main()
     nlh->nlmsg_pid = getpid();  //self pid
     nlh->nlmsg_flags = 0; 
 
-    strcpy(NLMSG_DATA(nlh), "Hello");   //put "Hello" into nlh
+    strcpy(NLMSG_DATA(nlh), "Hello this is a msg from userspace");   //put "Hello" into nlh
 
     iov.iov_base = (void *)nlh;         //iov -> nlh
     iov.iov_len = nlh->nlmsg_len;
