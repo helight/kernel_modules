@@ -16,9 +16,9 @@
 
 struct sockaddr_nl src_addr, dest_addr;
 struct nlmsghdr *nlh = NULL;
+struct msghdr msg;  //msghdr includes: struct iovec *   msg_iov;
 struct iovec iov;
 int sock_fd;
-struct msghdr msg;  //msghdr includes: struct iovec *   msg_iov;
 
 int main()
 {

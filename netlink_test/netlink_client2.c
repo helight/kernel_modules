@@ -30,22 +30,17 @@
 
 int main(int args, char *argv[])
 {
-        struct nlmsghdr *nlmsg;
-        struct msghdr msg;  //msghdr includes: struct iovec *   msg_iov;
-        
-        struct sockaddr_nl dest_addr;
+        struct sockaddr_nl src_addr, dest_addr;
+        struct nlmsghdr *nlh = NULL;
+        struct msghdr msg;  //msghdr includes: struct iovec *   msg_iov; 
         struct iovec iov;
 
         int retval;
-        char *data = "hello world!  xxxxx\0";
-        int size = strlen(data);
 
-        struct sockaddr_nl src_addr;
-        int saved_errno;
         int fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_XUX);
 
         if (fd < 0) {
-                printf("Error - audit support not in kernel");
+                printf("Error - not support not in kernel");
                 return fd;
         }
        
@@ -61,11 +56,11 @@ int main(int args, char *argv[])
         dest_addr.nl_groups = 0; /* unicast */
 
         // 构造nlmsg空间
-        nlmsg = (struct nlmsghdr *)malloc(NLMSG_SPACE(MAX_PAYLOAD));
+        nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(MAX_PAYLOAD));
         memset(nlmsg, 0, NLMSG_SPACE(MAX_PAYLOAD));
-        nlmsg->nlmsg_len = NLMSG_SPACE(MAX_PAYLOAD);
-        nlmsg->nlmsg_pid = getpid();  //self pid
-        nlmsg->nlmsg_flags = 0;
+        nlh->nlmsg_len = NLMSG_SPACE(MAX_PAYLOAD);
+        nlh->nlmsg_pid = getpid();  //self pid
+        nlh->nlmsg_flags = 0;
         // nlmsg->nlmsg_type = 0;
         // nlmsg->nlmsg_seq = 0;
 
@@ -75,9 +70,9 @@ int main(int args, char *argv[])
         // /usr/include/linux/netlink.h:92:#define NLMSG_LENGTH(len) ((len) + NLMSG_HDRLEN)
         // /usr/include/linux/netlink.h:91:#define NLMSG_HDRLEN	 ((int) NLMSG_ALIGN(sizeof(struct nlmsghdr)))
         // memcpy(NLMSG_DATA(nlmsg), data, size);
-        strcpy(NLMSG_DATA(nlmsg), "Hello this is a msg from userspace");
+        strcpy(NLMSG_DATA(nlh), "Hello this is a msg from userspace");
 
-        iov.iov_base = (void *)nlmsg;         //iov -> nlh
+        iov.iov_base = (void *)nlh;         //iov -> nlh
         iov.iov_len = nlmsg->nlmsg_len;
         msg.msg_name = (void *)&dest_addr;  //msg_name is Socket name: dest
         msg.msg_namelen = sizeof(dest_addr);
