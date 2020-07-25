@@ -57,7 +57,7 @@ int main(int args, char *argv[])
 
         // 构造nlmsg空间
         nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(MAX_PAYLOAD));
-        memset(nlmsg, 0, NLMSG_SPACE(MAX_PAYLOAD));
+        memset(nlh, 0, NLMSG_SPACE(MAX_PAYLOAD));
         nlh->nlmsg_len = NLMSG_SPACE(MAX_PAYLOAD);
         nlh->nlmsg_pid = getpid();  //self pid
         nlh->nlmsg_flags = 0;
