@@ -13,13 +13,14 @@
 #define NETLINK_USER 31  //self defined
 #define MAX_PAYLOAD 1024 /* maximum payload size*/
 
+struct sockaddr_nl src_addr, dest_addr;
+struct nlmsghdr *nlh = NULL;
+struct msghdr msg;  //msghdr includes: struct iovec *   msg_iov;
+struct iovec iov;
+int sock_fd;
+
 int main(int args, char *argv[])
 {
-    struct sockaddr_nl src_addr, dest_addr;
-    struct nlmsghdr *nlh = NULL;
-    struct msghdr msg;  //msghdr includes: struct iovec *   msg_iov;
-    struct iovec iov;
-    int sock_fd;
     //int socket(int domain, int type, int protocol);
 
     sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
@@ -41,7 +42,6 @@ int main(int args, char *argv[])
     dest_addr.nl_groups = 0;    /* unicast */
 
     //nlh: contains "Hello"
-
     nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(MAX_PAYLOAD));
     memset(nlh, 0, NLMSG_SPACE(MAX_PAYLOAD));
     nlh->nlmsg_len = NLMSG_SPACE(MAX_PAYLOAD);
