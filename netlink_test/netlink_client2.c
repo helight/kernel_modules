@@ -24,15 +24,11 @@
 #include <linux/netlink.h>
 
 #define NETLINK_XUX           21       /* testing */  
-#define VFW_GROUP  1
-
-struct netlink_data{
-        struct nlmsghdr msg;
-        char data[1024];
-};
+#define MAX_PAYLOAD 1024 /* maximum payload size*/
 
 int link_open(void)
 {
+        struct sockaddr_nl sa;
         int saved_errno;
         int fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_XUX);
 
@@ -47,39 +43,55 @@ int link_open(void)
                 errno = saved_errno;
                 return fd;
         }
-        if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1) {
-                saved_errno = errno;
-                close(fd);
-                        printf("Error setting audit netlink socket CLOEXEC flag (%s)",
-                        strerror(errno));
-                errno = saved_errno;
-                return -1;
-        }
+       
+        memset(&sa, 0, sizeof(sa));
+        sa.nl_family = AF_NETLINK;
+        sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;
+        sa.nl_pid = getpid(); /* self pid */
+
+        bind(fd, (struct sockaddr *) &sa, sizeof(sa));
         return fd;
 }
 
 int main(int args, char *argv[])
 {
-        struct netlink_data nldata;
-        struct nlmsghdr *msg = &nldata.msg;
-        struct msghdr msg2;  //msghdr includes: struct iovec *   msg_iov;
+        struct nlmsghdr *nlmsg;
+        struct msghdr msg;  //msghdr includes: struct iovec *   msg_iov;
+        
+        struct sockaddr_nl dest_addr;
+        struct iovec iov;
+
         int retval;
-        struct sockaddr_nl addr;
         char *data = "hello world!  xxxxx\0";
         int size = strlen(data);
 
         int fd = link_open();
 
-        memset(&nldata, '\0', sizeof(nldata));
-        msg->nlmsg_len = NLMSG_SPACE(size);
-        msg->nlmsg_type = 0;
-        msg->nlmsg_flags = 0;
-        msg->nlmsg_seq = 0;
-        addr.nl_family = AF_NETLINK;
-        addr.nl_pid = 0;
-        addr.nl_groups = 0;
+        // 构造nlmsg空间
+        nlmsg = (struct nlmsghdr *)malloc(NLMSG_SPACE(MAX_PAYLOAD));
+        memset(nlmsg, 0, NLMSG_SPACE(MAX_PAYLOAD));
+        nlmsg->nlmsg_len = NLMSG_SPACE(MAX_PAYLOAD);
+        nlmsg->nlmsg_pid = getpid();  //self pid
+        nlmsg->nlmsg_type = 0;
+        nlmsg->nlmsg_flags = 0;
+        nlmsg->nlmsg_seq = 0;
 
-        memcpy(NLMSG_DATA(msg), data, size);
+        dest_addr.nl_family = AF_NETLINK;
+        dest_addr.nl_pid = 0;
+        dest_addr.nl_groups = 0;
+        // strcpy(NLMSG_DATA(nlmsg), "Hello"); 
+        // 给数据空间写数据
+        // /usr/include/linux/netlink.h:94:#define NLMSG_DATA(nlh)  ((void*)(((char*)nlh) + NLMSG_LENGTH(0)))
+        // /usr/include/linux/netlink.h:92:#define NLMSG_LENGTH(len) ((len) + NLMSG_HDRLEN)
+        // /usr/include/linux/netlink.h:91:#define NLMSG_HDRLEN	 ((int) NLMSG_ALIGN(sizeof(struct nlmsghdr)))
+        memcpy(NLMSG_DATA(nlmsg), data, size);
+
+        iov.iov_base = (void *)nlmsg;         //iov -> nlh
+        iov.iov_len = nlmsg->nlmsg_len;
+        msg.msg_name = (void *)&dest_addr;  //msg_name is Socket name: dest
+        msg.msg_namelen = sizeof(dest_addr);
+        msg.msg_iov = &iov;                 //msg -> iov
+        msg.msg_iovlen = 1;
         /*
         #include <sys/types.h>
        #include <sys/socket.h>
@@ -94,7 +106,7 @@ int main(int args, char *argv[])
 
         // retval = sendto(fd, &nldata, msg->nlmsg_len, 0,
         //                (struct sockaddr*)&addr, sizeof(addr));
-        retval = send(fd, &nldata, msg->nlmsg_len, 0);
+        retval = sendmsg(fd, &msg, 0);
         printf("send ret: %d\n", retval);
         printf("hello:%02x len: %d  data:%s\n",
                         NLMSG_DATA(msg),
@@ -108,12 +120,29 @@ int main(int args, char *argv[])
 
        ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags); 
         */
-        retval = recv(fd, &nldata, msg->nlmsg_len, 0);
-        printf("recv ret: %d data: %s\n", retval, nldata);
-        printf("hello:%02x len: %d  data:%s\n",
-                        NLMSG_DATA(msg),
-                        sizeof(NLMSG_DATA(msg)),
-                        NLMSG_DATA(msg));
+
+        int len;
+        /* 8192 to avoid message truncation on platforms with
+        page size > 4096 */
+        struct nlmsghdr buf[8192/sizeof(struct nlmsghdr)];
+        struct iovec iov2 = { buf, sizeof(buf) };
+        struct sockaddr_nl sa2;
+        struct msghdr msg2;
+        struct nlmsghdr *nh;
+
+        msg2 = { &sa2, sizeof(sa2), &iov2, 1, NULL, 0, 0 };
+        len = recvmsg(fd, &msg2, 0);
+
+        for (nh = (struct nlmsghdr *) buf; NLMSG_OK (nh, len);
+                nh = NLMSG_NEXT(nh, len)) {
+                /* The end of multipart message */
+                if (nh->nlmsg_type == NLMSG_DONE)
+                        return;
+
+                // if (nh->nlmsg_type == NLMSG_ERROR)
+                        /* Do some error handling */
+                printf("recv ret: %d data: %s\n", len, NLMSG_DATA(nh));
+        }
 
         close(fd);
         return 0;
