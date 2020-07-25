@@ -73,7 +73,7 @@ int main(int args, char *argv[])
         strcpy(NLMSG_DATA(nlh), "Hello this is a msg from userspace");
 
         iov.iov_base = (void *)nlh;         //iov -> nlh
-        iov.iov_len = nlmsg->nlmsg_len;
+        iov.iov_len = nlh->nlmsg_len;
         msg.msg_name = (void *)&dest_addr;  //msg_name is Socket name: dest
         msg.msg_namelen = sizeof(dest_addr);
         msg.msg_iov = &iov;                 //msg -> iov
