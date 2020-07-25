@@ -20,7 +20,6 @@
 #include <linux/skbuff.h>
 
 #define NETLINK_XUX           21       /* testing */  
-#define VFW_GROUP  1
 #define MSG_SIZE NLMSG_SPACE(2048)
 
 static struct sock *xux_sock;
@@ -40,12 +39,13 @@ static void test_link(struct sk_buff *skb)
     struct netlink_ext_ack extack = {};
     msg_size = strlen(msg);
 
-/*
-static inline struct nlmsghdr *nlmsg_hdr(const struct sk_buff *skb)
-{
-    return (struct nlmsghdr *)skb->data;
-}
-*/
+    /*
+    static inline struct nlmsghdr *nlmsg_hdr(const struct sk_buff *skb)
+    {
+        return (struct nlmsghdr *)skb->data;
+    }
+    */
+    printk("receive data from user process:");
     while (skb->len >= NLMSG_SPACE(0)) {
         nlh = nlmsg_hdr(skb);
         if (nlh->nlmsg_len < sizeof(*nlh) || skb->len < nlh->nlmsg_len)
