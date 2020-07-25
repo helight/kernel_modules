@@ -41,7 +41,7 @@ int main(int args, char *argv[])
                 printf("Error - not support not in kernel");
                 return fd;
         }
-       
+
         memset(&src_addr, 0, sizeof(src_addr));
         src_addr.nl_family = AF_NETLINK;
         src_addr.nl_pid = getpid(); /* self pid */
@@ -78,20 +78,20 @@ int main(int args, char *argv[])
         msg.msg_iovlen = 1;
         /*
         #include <sys/types.h>
-       #include <sys/socket.h>
+        #include <sys/socket.h>
 
-       ssize_t send(int sockfd, const void *buf, size_t len, int flags);
+        ssize_t send(int sockfd, const void *buf, size_t len, int flags);
 
-       ssize_t sendto(int sockfd, const void *buf, size_t len, int flags,
-                      const struct sockaddr *dest_addr, socklen_t addrlen);
+        ssize_t sendto(int sockfd, const void *buf, size_t len, int flags,
+                        const struct sockaddr *dest_addr, socklen_t addrlen);
 
-       ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags);
+        ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags);
         */
 
         // retval = sendto(fd, &nldata, msg->nlmsg_len, 0,
         //                (struct sockaddr*)&addr, sizeof(addr));
         printf("Sending message to kernel\n");
-        
+
         int ret = sendmsg(fd, &msg, 0);
         printf("send ret: %d\n", ret);
         // printf("hello:%02x len: %d  data:%s\n",
@@ -101,16 +101,16 @@ int main(int args, char *argv[])
         /*
         ssize_t recv(int sockfd, void *buf, size_t len, int flags);
 
-       ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
+        ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
                         struct sockaddr *src_addr, socklen_t *addrlen);
 
-       ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);
+        ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);
         */
 
         printf("Waiting for message from kernel\n");
-        // int  len = recvmsg(fd, &msg, 0);
+        ret = recvmsg(fd, &msg, 0);
 
-        // printf("recv ret: %d data: %s\n", len, (char *)NLMSG_DATA(nlmsg));
+        printf("recv ret: %d data: %s\n", len, (char *)NLMSG_DATA(nlmsg));
 
         close(fd);
         return 0;

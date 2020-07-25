@@ -22,7 +22,6 @@ int sock_fd;
 int main(int args, char *argv[])
 {
     //int socket(int domain, int type, int protocol);
-
     sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
 
     if(sock_fd < 0)
