@@ -27,17 +27,15 @@
 #define NETLINK_XUX           31       /* testing */  
 #define MAX_PAYLOAD 1024 /* maximum payload size*/
 
-
 int main(int args, char *argv[])
 {
         struct sockaddr_nl src_addr, dest_addr;
         struct nlmsghdr *nlh = NULL;
         struct msghdr msg;  //msghdr includes: struct iovec *   msg_iov; 
         struct iovec iov;
+        int fd;
 
-        int retval;
-
-        int fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_XUX);
+        fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_XUX);
 
         if (fd < 0) {
                 printf("Error - not support not in kernel");
@@ -94,8 +92,8 @@ int main(int args, char *argv[])
         //                (struct sockaddr*)&addr, sizeof(addr));
         printf("Sending message to kernel\n");
         
-        retval = sendmsg(fd, &msg, 0);
-        printf("send ret: %d\n", retval);
+        int ret = sendmsg(fd, &msg, 0);
+        printf("send ret: %d\n", ret);
         // printf("hello:%02x len: %d  data:%s\n",
         //                NLMSG_DATA(msg),
         //                sizeof(NLMSG_DATA(msg)),

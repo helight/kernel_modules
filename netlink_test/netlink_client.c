@@ -13,15 +13,13 @@
 #define NETLINK_USER 31  //self defined
 #define MAX_PAYLOAD 1024 /* maximum payload size*/
 
-
-struct sockaddr_nl src_addr, dest_addr;
-struct nlmsghdr *nlh = NULL;
-struct msghdr msg;  //msghdr includes: struct iovec *   msg_iov;
-struct iovec iov;
-int sock_fd;
-
-int main()
+int main(int args, char *argv[])
 {
+    struct sockaddr_nl src_addr, dest_addr;
+    struct nlmsghdr *nlh = NULL;
+    struct msghdr msg;  //msghdr includes: struct iovec *   msg_iov;
+    struct iovec iov;
+    int sock_fd;
     //int socket(int domain, int type, int protocol);
 
     sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
