@@ -6,7 +6,7 @@ CURRENT_PATH:=$(shell pwd)
 LINUX_KERNEL:=$(shell uname -r)
 #the absolute path
 #LINUX_KERNEL_PATH:=/usr/src/linux-headers-$(LINUX_KERNEL)
-KVERSION:=5.4.0-70-generic
+KVERSION:=5.3.0-70-generic
 LINUX_KERNEL_PATH:=/usr/src/linux-headers-$(KVERSION)/
 #/usr/src/linux-headers-4.19.0-9-amd64/
 #complie object
