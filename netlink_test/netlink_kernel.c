@@ -142,7 +142,6 @@ static void __exit hello_exit(void)
 	netlink_kernel_release(nl_sk);
 }
 
-
 module_init(hello_init);
 module_exit(hello_exit);
 MODULE_LICENSE("GPL");

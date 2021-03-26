@@ -46,7 +46,11 @@ int main(int args, char *argv[])
         src_addr.nl_family = AF_NETLINK;
         src_addr.nl_pid = getpid(); /* self pid */
 
-        bind(fd, (struct sockaddr *) &src_addr, sizeof(src_addr));
+        if(bind(fd, (struct sockaddr *) &src_addr, sizeof(src_addr))){
+                perror("bind() error\n");
+                close(skfd);
+                return -1;
+        }
 
         memset(&dest_addr, 0, sizeof(dest_addr));
         dest_addr.nl_family = AF_NETLINK;

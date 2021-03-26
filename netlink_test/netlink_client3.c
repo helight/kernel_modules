@@ -8,8 +8,8 @@
 #include <errno.h>
 
 #define NETLINK_TEST    31
-#define MSG_LEN            125
-#define MAX_PLOAD        125
+#define MSG_LEN         125
+#define MAX_PLOAD       125
 
 typedef struct _user_msg_info
 {

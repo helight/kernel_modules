@@ -1,5 +1,6 @@
 CC=clang
 LIBS=-lelf -lbpf
+#-static
 
 all: bpf_loader bpf_program.o
 

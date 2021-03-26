@@ -23,7 +23,7 @@
 
 static struct sock *xux_sock = NULL;
 
-static void test_link(struct sk_buff *skb)
+static void xux_netlink(struct sk_buff *skb)
 {
     struct nlmsghdr *nlh;
     int pid;
@@ -45,7 +45,7 @@ static void test_link(struct sk_buff *skb)
     nlh = nlmsg_hdr(skb);
     printk("receive data from user process: %s", (char *)NLMSG_DATA(nlh));
 
-    //for sending...
+    //for sending msg...
 	pid = nlh->nlmsg_pid; // Sending process port ID, will send new message back to the 'user space sender'
 	skb_out = nlmsg_new(msg_size, 0);    //nlmsg_new - Allocate a new netlink message: skb_out
 
@@ -69,7 +69,7 @@ static void test_link(struct sk_buff *skb)
 int __init init_link(void)
 {
     struct netlink_kernel_cfg cfg = {
-		.input = test_link,//该函数原型可参考内核代码，其他参数默认即可
+		.input = xux_netlink,//该函数原型可参考内核代码，其他参数默认即可
 	};
     xux_sock = netlink_kernel_create(&init_net, NETLINK_XUX, &cfg);
     if (!xux_sock){
